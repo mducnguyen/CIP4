@@ -1,0 +1,9 @@
+T__11=11
+EQ=4
+MINUS=5
+OPERAND=6
+Operations=7
+PLUS=8
+SYMBOL=9
+WS=10
+'\n'=11

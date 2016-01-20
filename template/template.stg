@@ -1,0 +1,84 @@
+group template;
+
+sums(symbols,sums) ::= <<
+package chocoSolver;
+
+import static choco.Choco.allDifferent;
+import static choco.Choco.eq;
+import static choco.Choco.makeIntVar;
+import static choco.Choco.plus;
+import static choco.Choco.scalar;
+import static choco.Choco.mult;
+
+import choco.Choco;
+import choco.Options;
+import choco.cp.model.CPModel;
+import choco.cp.solver.CPSolver;
+import choco.kernel.model.Model;
+import choco.kernel.model.variables.integer.IntegerExpressionVariable;
+import choco.kernel.model.variables.integer.IntegerVariable;
+import choco.kernel.solver.Solver;
+
+import java.util.List;
+import java.util.ArrayList;
+
+public class SymbolraetselChocoSolver {
+	public static void main(String[] args) {
+		
+		List\<IntegerVariable\> carryList;
+	    carryList = new ArrayList\<\>();
+		int initpos=0; 
+		int extracpos=0;
+		// Build model
+        Model model = new CPModel();
+        
+        // Declare every letter as a variable
+        <symbols:{symbol | IntegerVariable <symbol> = makeIntVar("<symbol>",0,9,Options.V_ENUM);}; separator="\n"> 
+		
+		// Add constraint of all different letters.
+		model.addConstraint(allDifferent(new IntegerVariable[]{<symbols; separator=", ">}));
+		<sums; separator="\n\n">
+		 // Build a solver, read the model and solve it
+		Solver s = new CPSolver();
+        s.read(model);
+        if(s.solve()) {
+			System.out.println("Das Raetsel wurde geloest!");
+			<symbols : {symbol |System.out.println(<symbol>.getName() + " = " + s.getVar(<symbol>).getVal());}; separator="\n">
+		} else {
+			System.out.println("Das Raetsel konnte nicht geloest werden!");
+		}
+	}
+}
+>>
+
+
+sum(number1, number2, number3) ::= <<
+	<!// Declare every name as a variable
+		IntegerVariable <number1.characters> = makeIntVar("<number1.characters>",0, (int)Math.pow(10,<length(number1.characters)> + 1)-1, Options.V_BOUND); 
+		IntegerVariable <number2.characters> = makeIntVar("<number2.characters>",0, (int)Math.pow(10,<length(number2.characters)> + 1)-1, Options.V_BOUND);
+		IntegerVariable <number3.characters> = makeIntVar("<number3.characters>",0, (int)Math.pow(10,<length(number3.characters)> + 1)-1, Options.V_BOUND);
+	!>
+	<!// Array of coefficients
+		int[] c = new int[]
+        { 100000, 10000, 1000, 100, 10, 1 };	
+	   // Declare every combination of letter as an integer expression
+        IntegerExpressionVariable <number1.characters> = scalar(new IntegerVariable[]
+        {<number1.characters; separator=", ">}, c);
+        IntegerExpressionVariable <number2.characters> = scalar(new IntegerVariable[]
+        {<number2.characters; separator=", ">}, c);
+        IntegerExpressionVariable <number3.characters> = scalar(new IntegerVariable[]
+        {<number3.characters; separator=", ">}, c);!>
+        
+    // Declare Carry variables
+	    carryList.add(makeIntVar("addcarry"+ (initpos++),0,0,Options.V_ENUM));
+    	<trunc(number1.characters), trunc(number2.characters), trunc(number3.characters):
+    		{ chars1, chars2,chars3 |	carryList.add(makeIntVar("addcarry"+ (initpos++),0,1,Options.V_ENUM));}; separator="\n" 
+    	>     
+	    carryList.add(makeIntVar("addcarry"+ (initpos++),0,0,Options.V_ENUM));
+        
+    // Add Constrains
+		
+		<number1.characters, number2.characters,number3.characters : 
+		{char1,char2,char3| model.addConstraint(eq(plus(plus(carryList.get(++extracpos),<if(char1)><char1><else>Choco.ZERO<endif>),<if(char2)><char2><else>Choco.ZERO<endif>),plus(<if(char3)><char3><else>Choco.ZERO<endif>,mult(carryList.get(extracpos-1),10))));}; separator="\n">	
+		++extracpos;
+>>
